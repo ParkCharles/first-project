@@ -18,7 +18,7 @@ const ccp = JSON.parse(ccpJSON); // unmarshal? []byte -> 구조체 객체화~
 
 // 2.2 서버 속성 설정
 const PORT = 3000;
-const HOST = '0.0.0.0';
+const HOST = 'localhost';
 
 app.use(express.static(path.join(__dirname, 'views')));
 app.use(bodyParser.json());
@@ -67,24 +67,24 @@ app.post('/user', async(request, response)=>{
             console.log(`Wallet path: ${walletPath}`);
   
             // Check to see if we've already enrolled the admin user.
-            const adminExists = await wallet.exists('admin');
-            if (adminExists) {
-                console.log('An identity for the admin user admin already exists in the wallet');
-                // 오류전송 to 클라이언트
-                const obj = JSON.parse('{"ERR_MSG":"An identity for the admin user admin already exists in the wallet"}');
-                response.status(400).json(obj);
-            }
+            // const adminExists = await wallet.exists('admin');
+            // if (adminExists) {
+            //     console.log('An identity for the admin user admin already exists in the wallet');
+            //     // 오류전송 to 클라이언트
+            //     const obj = JSON.parse('{"ERR_MSG":"An identity for the admin user admin already exists in the wallet"}');
+            //     response.status(400).json(obj);
+            // }
 
             //Enroll the admin user, and import the new identity into the wallet.
             const enrollment = await ca.enroll({ enrollmentID: id, enrollmentSecret: pw });
             const identity = X509WalletMixin.createIdentity('Org1MSP', enrollment.certificate, enrollment.key.toBytes());
             wallet.import('admin', identity);
-            console.log('Successfully enrolled admin user "admin" and imported it into the wallet');
-            const obj = JSON.parse('{"PAYLOAD":"Successfully enrolled admin user admin and imported it into the wallet"}');
+            console.log('Successfully enrolled admin user and imported it into the wallet');
+            const obj = JSON.parse('{"PAYLOAD":"Successfully enrolled admin user and imported it into the wallet"}');
             response.status(200).json(obj);
 
         } catch (error) {
-            console.error(`Failed to enroll admin user "admin": ${error}`);
+            console.error(`Failed to enroll admin user : ${error}`);
             // process.exit(1);
             // 오류전송 to 클라이언트
             const obj = JSON.parse(`{"ERR_MSG":"Failed to enroll admin user admin : ${error}"}`);
@@ -159,10 +159,10 @@ app.post('/asset', async(request, response)=>{
     console.log(`Wallet path: ${walletPath}`);
     const userExists = await wallet.exists(id);
     if(!userExists) {
-        console.log(`An identity for the user ${id} does nto exist in the wallet`);
+        console.log(`An identity for the user ${id} does not exist in the wallet`);
         console.log('Run the registerUser.js application before retrying');
         // 클라이언트에서 인증서에 관한 안내 HTML을 보내줘야 함
-        response.status(401).sendFile(__dirname + '/unauth.html');
+        response.status(401).sendFile(__dirname + '/views/unauth.html');
         return;
     }
     // 게이트웨이연결
@@ -197,7 +197,7 @@ app.get('/asset', async(request, response)=>{
     console.log(`Wallet path: ${walletPath}`);
     const userExists = await wallet.exists(id);
     if(!userExists) {
-        console.log(`An identity for the user ${id} does nto exist in the wallet`);
+        console.log(`An identity for the user ${id} does not exist in the wallet`);
         console.log('Run the registerUser.js application before retrying');
         // 클라이언트에서 인증서에 관한 안내 HTML을 보내줘야 함
         // response.status(401).sendFile(__dirname + '/unauth.html');
@@ -239,10 +239,10 @@ app.get('/assets', async(request, response)=>{
     console.log(`Wallet path: ${walletPath}`);
     const userExists = await wallet.exists(id);
     if(!userExists) {
-        console.log(`An identity for the user ${id} does nto exist in the wallet`);
+        console.log(`An identity for the user ${id} does not exist in the wallet`);
         console.log('Run the registerUser.js application before retrying');
         // 클라이언트에서 인증서에 관한 안내 HTML을 보내줘야 함
-        response.status(401).sendFile(__dirname + '/unauth.html');
+        response.status(401).sendFile(__dirname + '/views/unauth.html');
         return;
     }
     
@@ -296,10 +296,10 @@ app.post('/tx', async(request, response)=>{
     console.log(`Wallet path: ${walletPath}`);
     const userExists = await wallet.exists(id);
     if(!userExists) {
-        console.log(`An identity for the user ${id} does nto exist in the wallet`);
+        console.log(`An identity for the user ${id} does not exist in the wallet`);
         console.log('Run the registerUser.js application before retrying');
         // 클라이언트에서 인증서에 관한 안내 HTML을 보내줘야 함
-        response.status(401).sendFile(__dirname + '/unauth.html');
+        response.status(401).sendFile(__dirname + '/views/unauth.html');
         return;
     }
     const gateway = new Gateway();
