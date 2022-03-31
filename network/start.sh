@@ -14,6 +14,10 @@ export MSYS_NO_PATHCONV=1
 export CA1_PRIVATE_KEY=$(cd crypto-config/peerOrganizations/org1.example.com/ca && ls *_sk)
 export CA2_PRIVATE_KEY=$(cd crypto-config/peerOrganizations/org2.example.com/ca && ls *_sk)
 
+# PRIVATE_KEY가 잘 설정되었는지 확인
+echo $CA1_PRIVATE_KEY
+echo $CA2_PRIVATE_KEY
+
 function checkPrereqs() {
     # check config dir
     if [ ! -d "./crypto-config" ]; then

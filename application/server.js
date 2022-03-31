@@ -18,7 +18,7 @@ const ccp = JSON.parse(ccpJSON); // unmarshal? []byte -> 구조체 객체화~
 
 // 2.2 서버 속성 설정
 const PORT = 3000;
-const HOST = 'localhost';
+const HOST = '0.0.0.0';
 
 app.use(express.static(path.join(__dirname, 'views')));
 app.use(bodyParser.json());
@@ -52,11 +52,9 @@ app.post('/user', async(request, response)=>{
     {
         const id = request.body.id;
         const pw = request.body.pw;
-
-        console.log('/user-post-'+id+'-'+pw);
+        console.log('/user-post-'+id+' '+pw);
 
         try {
-
             // Create a new CA client for interacting with the CA.
             const caURL = ccp.certificateAuthorities['ca.example.com'].url;
             const ca = new FabricCAServices(caURL);
@@ -67,27 +65,29 @@ app.post('/user', async(request, response)=>{
             console.log(`Wallet path: ${walletPath}`);
   
             // Check to see if we've already enrolled the admin user.
-            // const adminExists = await wallet.exists('admin');
-            // if (adminExists) {
-            //     console.log('An identity for the admin user admin already exists in the wallet');
-            //     // 오류전송 to 클라이언트
-            //     const obj = JSON.parse('{"ERR_MSG":"An identity for the admin user admin already exists in the wallet"}');
-            //     response.status(400).json(obj);
-            // }
+            const adminExists = await wallet.exists('admin');
+            if (!adminExists) {
+                console.log('An identity for the admin user does not exists in the wallet');
+                // 오류전송 to 클라이언트
+                const obj = JSON.parse('An identity for the admin user does not exists in the wallet');
+                response.status(400).json(obj);
+            }
+
+            
 
             //Enroll the admin user, and import the new identity into the wallet.
             const enrollment = await ca.enroll({ enrollmentID: id, enrollmentSecret: pw });
             const identity = X509WalletMixin.createIdentity('Org1MSP', enrollment.certificate, enrollment.key.toBytes());
-            wallet.import('admin', identity);
+            wallet.import(id, identity);
             console.log('Successfully enrolled admin user and imported it into the wallet');
             const obj = JSON.parse('{"PAYLOAD":"Successfully enrolled admin user and imported it into the wallet"}');
             response.status(200).json(obj);
 
         } catch (error) {
-            console.error(`Failed to enroll admin user : ${error}`);
+            console.error(`Failed to enroll admin user ${id}: ${error}`);
             // process.exit(1);
             // 오류전송 to 클라이언트
-            const obj = JSON.parse(`{"ERR_MSG":"Failed to enroll admin user admin : ${error}"}`);
+            const obj = JSON.parse(`{"ERR_MSG":"Failed to enroll admin user ${id} : ${error}"}`);
             response.status(400).json(obj);
         }
     
@@ -107,17 +107,16 @@ app.post('/user', async(request, response)=>{
             // Check to see if we've already enrolled the user.
             const userExists = await wallet.exists(id);
             if (userExists) {
-                console.log(`An identity for the admin user ${id} already exists in the wallet`);
+                console.log(`An identity for the user ${id} already exists in the wallet`);
                 const obj = JSON.parse(`{"ERR_MSG":"An identity for the user ${id} already exists in the wallet"}`);
                 response.status(400).json(obj);
             }
             
             // Check to see if we've already enrolled the admin user.
-            const adminExists = await wallet.exists('admin');
-            if (!adminExists) {
-                console.log('An identity for the admin user does not exists in the wallet');
-                console.log('Run the enrollAdmin.js application before retrying');
-                const obj = JSON.parse('{"ERR_MSG":"An identity for the admin user does not exists in the wallet"}');
+            const adminExists = await wallet.exists(id);
+            if (adminExists) {
+                console.log(`An identity for the admin user ${id} already exists in the wallet`);
+                const obj = JSON.parse(`{"ERR_MSG":"An identity for the admin user ${id} already exists in the wallet"}`);
                 response.status(400).json(obj);
             }
 
@@ -188,7 +187,7 @@ app.post('/asset', async(request, response)=>{
 app.get('/asset', async(request, response)=>{
     // 어플리케이션 요청문서에서 파라미터 꺼내기 ( POST method에서는 query에서 꺼냄 )
     const key   = request.query.key;
-    const id = request.query.id;
+    const id    = request.query.id;
 
     console.log('/asset-get-'+key);
     // 인증서작업 -> user1
@@ -247,10 +246,10 @@ app.get('/assets', async(request, response)=>{
     }
     
     const gateway = new Gateway(); 
-    await gateway.connect(ccp, { wallet, identity: 'user1', discovery: { enabled: false } });
+    await gateway.connect(ccp, { wallet, identity: id, discovery: { enabled: false } });
     const network = await gateway.getNetwork('mychannel');
     const contract = network.getContract('simpleasset'); 
-    const txresult = await contract.evaluateTransaction('history', from, to, value);
+    const txresult = await contract.evaluateTransaction('history', key);
     console.log('Transaction has been submitted: '+txresult);
 
     // [{TxID
